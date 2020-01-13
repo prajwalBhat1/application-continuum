@@ -17,12 +17,15 @@ public class PackageGeneratorController {
 
 	@Autowired
 	private PackageGeneratorService generatorService;
+	
+	public static final String FILE_SEPARATOR = System.getProperty("file.separator");
 
 	@RequestMapping(value = { "/application/continuum/api/v1/generate" }, method = {
 			RequestMethod.POST }, produces = "application/zip")
 	public ResponseEntity<?> generatePackage(HttpServletRequest httpServletRequest, @RequestBody Root project) {
 
 		generatorService.generatePom(project.getProject());
+		
 		
 		return null;
 

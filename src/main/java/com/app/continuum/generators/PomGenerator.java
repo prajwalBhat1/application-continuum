@@ -27,11 +27,11 @@ public class PomGenerator {
 
 	public void generateModels(Project projectModel, HashMap<String, String> pathMap) {
 		// L1 model
-		generatePomL1(projectModel,pathMap);
+		generatePomL1(projectModel, pathMap);
 		// L2 model
-		generatePomL2(projectModel,pathMap);
+		generatePomL2(projectModel, pathMap);
 		// L3 Model
-		generatePomL3(projectModel,pathMap);
+		generatePomL3(projectModel, pathMap);
 
 	}
 
@@ -48,8 +48,10 @@ public class PomGenerator {
 		model.setArtifactId(projectModel.getArtifactId());
 		model.setPackaging("pom");
 		model.setModelVersion("4.0.0");
+		model.setGroupId(projectModel.getGroupId());
+		model.setVersion(projectModel.getVersion());
 		// should name be a separate field?
-		model.setName(projectModel.getParent().getArtifactId());
+		//model.setName(projectModel.getArtifactId());
 		Properties property = new Properties();
 		property.put("create.metainf", "true");
 		property.put("java.version", projectModel.getJavaVersion());
@@ -58,7 +60,8 @@ public class PomGenerator {
 		// Dependencies
 		model.setDependencies(buildDependancyFromParent(projectModel.getDependencies()));
 		// modules -- applications , components
-		model.setModules(Arrays.asList("applications", "components"));
+		// let components get built first
+		model.setModules(Arrays.asList("components", "applications"));
 		printPom(model, pathMap.get(projectModel.getArtifactId()));
 	}
 
@@ -69,17 +72,17 @@ public class PomGenerator {
 		model.setModelVersion("4.0.0");
 		// parent
 		Parent parent = new Parent();
-		parent.setGroupId(projectModel.getParent().getGroupId());
-		parent.setArtifactId(projectModel.getParent().getArtifactId());
-		parent.setVersion(projectModel.getParent().getVersion());
+		parent.setGroupId(projectModel.getGroupId());
+		parent.setArtifactId(projectModel.getArtifactId());
+		parent.setVersion(projectModel.getVersion());
 		model.setParent(parent);
 		model.setPackaging("pom");
-		model.setArtifactId(projectModel.getArtifactId());
-		model.setName(projectModel.getParent().getArtifactId());
+		model.setArtifactId("applications");
+		model.setName("Applications - Parent Project");
 		Properties property = new Properties();
 		property.put("create.metainf", "true");
 		model.setProperties(property);
-		//modules
+		// modules
 		model.setModules(projectModel.getApplications().stream().map(application -> application.getArtifactId())
 				.collect(Collectors.toList()));
 		printPom(model, pathMap.get("applications"));
@@ -88,17 +91,17 @@ public class PomGenerator {
 		modelComp.setModelVersion("4.0.0");
 		// parent
 		Parent parentComp = new Parent();
-		parentComp.setGroupId(projectModel.getParent().getGroupId());
-		parentComp.setArtifactId(projectModel.getParent().getArtifactId());
-		parentComp.setVersion(projectModel.getParent().getVersion());
+		parentComp.setGroupId(projectModel.getGroupId());
+		parentComp.setArtifactId(projectModel.getArtifactId());
+		parentComp.setVersion(projectModel.getVersion());
 		modelComp.setParent(parent);
 		modelComp.setPackaging("pom");
-		modelComp.setArtifactId(projectModel.getArtifactId());
-		modelComp.setName(projectModel.getParent().getArtifactId());
+		modelComp.setArtifactId("components");
+		modelComp.setName("Components - Parent Project");
 		Properties propertyComp = new Properties();
 		propertyComp.put("create.metainf", "true");
 		modelComp.setProperties(property);
-		//modules
+		// modules
 		modelComp.setModules(projectModel.getComponents().stream().map(component -> component.getArtifactId())
 				.collect(Collectors.toList()));
 		printPom(modelComp, pathMap.get("components"));
@@ -108,6 +111,7 @@ public class PomGenerator {
 	public void generatePomL3(Project projectModel, HashMap<String, String> pathMap) {
 		// application
 		projectModel.getApplications().stream().forEach(application -> {
+			List<CommonDependencyModel> commonDependencyList = new ArrayList<CommonDependencyModel>();
 			List<List<CommonDependencyModel>> componentDependencyList = application.getComponentDependancyList()
 					.stream().map(component -> {
 						return projectModel.getComponents().stream()
@@ -117,11 +121,15 @@ public class PomGenerator {
 											it.getVersion());
 								}).collect(Collectors.toList());
 					}).collect(Collectors.toList());
-            // generate POM
-			generateCommonL3Pom(application, pathMap, componentDependencyList.get(0));
+			// generate POM
+			if (!componentDependencyList.isEmpty() && componentDependencyList.get(0) != null) {
+				commonDependencyList = componentDependencyList.get(0);
+			}
+			generateCommonL3Pom(application, pathMap, commonDependencyList, projectModel, "applications");
 		});
 		// components
 		projectModel.getComponents().stream().forEach(component -> {
+			List<CommonDependencyModel> commonDependencyList = new ArrayList<CommonDependencyModel>();
 			List<List<CommonDependencyModel>> componentDependencyList = component.getComponentDependancyList().stream()
 					.map(componentSub -> {
 						return projectModel.getComponents().stream()
@@ -131,19 +139,25 @@ public class PomGenerator {
 											it.getVersion());
 								}).collect(Collectors.toList());
 					}).collect(Collectors.toList());
-             // generate POM
-			generateCommonL3Pom(component, pathMap, componentDependencyList.get(0));
+			// generate POM
+			if (!componentDependencyList.isEmpty() && componentDependencyList.get(0) != null) {
+				commonDependencyList = componentDependencyList.get(0);
+			}
+			generateCommonL3Pom(component, pathMap, commonDependencyList, projectModel, "components");
 		});
 	}
 
 	private void generateCommonL3Pom(ApplicationComponentCommonModel application, HashMap<String, String> pathMap,
-			List<CommonDependencyModel> componentDependencyList) {
+			List<CommonDependencyModel> componentDependencyList, Project projectModel, String parentProject) {
 		Model model = new Model();
 		model.setModelVersion("4.0.0");
+		model.setArtifactId(application.getArtifactId());
+		model.setGroupId(application.getGroupId());
+		model.setVersion(application.getVersion());
 		Parent parent = new Parent();
-		parent.setGroupId(application.getGroupId());
-		parent.setArtifactId(application.getArtifactId());
-		parent.setVersion(application.getVersion());
+		parent.setGroupId(projectModel.getGroupId());
+		parent.setArtifactId(parentProject);
+		parent.setVersion(projectModel.getVersion());
 		model.setParent(parent);
 		// set properties
 		Properties property = new Properties();
@@ -190,6 +204,6 @@ public class PomGenerator {
 
 	public static void main(String[] args) {
 		PomGenerator generator = new PomGenerator();
-		//generator.generatePomL1(projctModel);
+		// generator.generatePomL1(projctModel);
 	}
 }
