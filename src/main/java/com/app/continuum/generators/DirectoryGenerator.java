@@ -15,36 +15,44 @@ import org.springframework.stereotype.Component;
 @Component
 public class DirectoryGenerator {
 
-	public HashMap<String,String> generateFolders(Map<String, List<String>> dirKey) {
+	private static final String L1 = "L1";
+	private static final String L3_COMPONENTS = "L3-components";
+	private static final String L3_APPLICATIONS = "L3-applications";
+	private static final String L2_COMPONENTS = "L2-components";
+	private static final String L2_APPLICATIONS = "L2-applications";
+	private static final String SEPARATOR = "\\";
+
+	public HashMap<String,String> generateFolders(Map<String, List<String>> dirKey , String root) {
 		String javaSource = "\\src\\main\\java";
 		String testSource = "\\src\\test\\java";
-		String root = "C:\\Users\\prajwbhat\\Massage_Envy\\";
 		HashMap<String, String> pathMap = new HashMap<String, String>();
-		String L1path = root + dirKey.get("L1").get(0);
+		String L1path = root + dirKey.get(L1).get(0);
 		// artifactId - path
-		pathMap.put(dirKey.get("L1").get(0), L1path + "\\");
-		Path p1 = Paths.get(L1path, dirKey.get("L2-applications").get(0));
-		Path p2 = Paths.get(L1path, dirKey.get("L2-components").get(0));
+		pathMap.put(dirKey.get(L1).get(0), L1path + SEPARATOR);
+		Path p1 = Paths.get(L1path, dirKey.get(L2_APPLICATIONS).get(0));
+		Path p2 = Paths.get(L1path, dirKey.get(L2_COMPONENTS).get(0));
 		
-		pathMap.put(dirKey.get("L2-applications").get(0), L1path + "\\" + dirKey.get("L2-applications").get(0) + "\\");
-		pathMap.put(dirKey.get("L2-components").get(0), L1path + "\\" + dirKey.get("L2-components").get(0) + "\\");
+		pathMap.put(dirKey.get(L2_APPLICATIONS).get(0), L1path + SEPARATOR + dirKey.get(L2_APPLICATIONS).get(0) + SEPARATOR);
+		pathMap.put(dirKey.get(L2_COMPONENTS).get(0), L1path + SEPARATOR + dirKey.get(L2_COMPONENTS).get(0) + SEPARATOR);
 		
 		dirKey.forEach((key, value) -> {
-			if (key.equals("L3-applications")) {
-				dirKey.get("L3-applications").stream().forEach(application -> {
+			if (key.equals(L3_APPLICATIONS)) {
+				dirKey.get(L3_APPLICATIONS).stream().forEach(application -> {
 					// java source
-					createDirectory(Paths.get(L1path, dirKey.get("L2-applications").get(0), application, javaSource));
+					createDirectory(Paths.get(L1path, dirKey.get(L2_APPLICATIONS).get(0), application, javaSource));
 					//test source
-					createDirectory(Paths.get(L1path, dirKey.get("L2-applications").get(0), application, testSource));
-					pathMap.put(application, L1path +"\\"+ dirKey.get("L2-applications").get(0) + "\\"+ application + "\\");
+					createDirectory(Paths.get(L1path, dirKey.get(L2_APPLICATIONS).get(0), application, testSource));
+					pathMap.put(application, L1path + SEPARATOR + dirKey.get(L2_APPLICATIONS).get(0) + SEPARATOR
+							+ application + SEPARATOR);
 				});
-			} else if (key.equals("L3-components")) {
-				dirKey.get("L3-components").stream().forEach(component -> {
+			} else if (key.equals(L3_COMPONENTS)) {
+				dirKey.get(L3_COMPONENTS).stream().forEach(component -> {
 					//java source
-					createDirectory(Paths.get(L1path, dirKey.get("L2-components").get(0), component, javaSource));
+					createDirectory(Paths.get(L1path, dirKey.get(L2_COMPONENTS).get(0), component, javaSource));
 					//test source
-					createDirectory(Paths.get(L1path, dirKey.get("L2-components").get(0), component, testSource));
-					pathMap.put(component, L1path +"\\"+ dirKey.get("L2-components").get(0) + "\\"+ component +"\\");
+					createDirectory(Paths.get(L1path, dirKey.get(L2_COMPONENTS).get(0), component, testSource));
+					pathMap.put(component, L1path + SEPARATOR + dirKey.get(L2_COMPONENTS).get(0) + SEPARATOR
+							+ component + SEPARATOR);
 				});
 			}
 		});
@@ -70,18 +78,18 @@ public class DirectoryGenerator {
 	public static void main(String[] args) {
 		DirectoryGenerator generator = new DirectoryGenerator();
 		HashMap<String, List<String>> dirKey = new HashMap<String, List<String>>();
-		dirKey.put("L1", Arrays.asList("application-continnum-root"));
-		dirKey.put("L2-applications", Arrays.asList("applications"));
-		dirKey.put("L2-components", Arrays.asList("components"));
+		dirKey.put(L1, Arrays.asList("application-continnum-root"));
+		dirKey.put(L2_APPLICATIONS, Arrays.asList("applications"));
+		dirKey.put(L2_COMPONENTS, Arrays.asList("components"));
 		List<String> applications = new ArrayList<String>();
 		List<String> components = new ArrayList<String>();
 		applications.add("app-sample1");
 		applications.add("app-sample2");
 		components.add("component-sample1");
 		components.add("component-sample2");
-		dirKey.put("L3-applications", applications);
-		dirKey.put("L3-components", components);
-		generator.generateFolders(dirKey);
+		dirKey.put(L3_APPLICATIONS, applications);
+		dirKey.put(L3_COMPONENTS, components);
+		generator.generateFolders(dirKey , "");
 
 	}
 
